@@ -8,3 +8,4 @@ import '@angular/router';
 
 import 'rxjs';
 import 'three';
+import 'bootstrap.native';
