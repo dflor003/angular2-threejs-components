@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Logger } from '../common';
+import { Logger } from '../ng2-threejs/src';
 
 @Component({
   selector: 'home',

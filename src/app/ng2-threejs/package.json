@@ -1,0 +1,16 @@
+{
+  "name": "ng2-threejs",
+  "version": "0.1.0",
+  "description": "ThreeJS components for angular2",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "threejs",
+    "angular2"
+  ],
+  "author": "Danil Flores <dflor003@gmail.com>",
+  "license": "MIT",
+  "dependencies": {}
+}
