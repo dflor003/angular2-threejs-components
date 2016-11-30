@@ -1,6 +1,12 @@
 <div>
   <h1>Home</h1>
-  <wgl-scene
-  >
-  </wgl-scene>
+  <scene #scene [clearColor]="'#000'">
+    <camera [x]="40" [y]="40" [z]="40" [aspectRatio]="scene.width / scene.height" [target]="scene" >
+    </camera>
+    <axis></axis>
+    <mesh>
+      <geometry [width]="5" [height]="5" [depth]="5"></geometry>
+      <material [color]="'#dddddd'" [wireframe]="true"></material>
+    </mesh>
+  </scene>
 </div>

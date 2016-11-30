@@ -1,30 +1,33 @@
-import { Component, ElementRef, Input, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component, ElementRef, Input, OnInit, OnDestroy, QueryList,
+  ContentChildren, AfterContentInit, ContentChild,
+} from '@angular/core';
 import { Scene, WebGLRenderer, PerspectiveCamera } from 'three';
 import { defaultTo } from 'lodash';
 import { Logger } from '../common';
+import { Base3DComponent } from './base-3d-component';
+import { CameraComponent } from './camera-component';
 
 const DefaultWidth = 640;
 const DefaultHeight = 480;
+const DefaultClearColor = '#6495ED';
 
 @Component({
-  selector: 'wgl-scene',
+  selector: 'scene',
   template: `
-    <div class="threejs-scene" #contentElement>
-    </div>
   `,
   styles: [`
-    .threejs-scene {
+    :host {
+      display: block;
       width: 100%;
       height: 100%;
-      display: block;
     }
-  `]
+  `],
 })
-export class SceneComponent implements OnInit, OnDestroy {
+export class SceneComponent implements OnInit, OnDestroy, AfterContentInit {
   private contentElement: ElementRef;
   private scene = new Scene();
   private renderer = new WebGLRenderer();
-  private camera: PerspectiveCamera;
   private log: Logger;
   private animationFrameHandle: number;
   private running = false;
@@ -33,6 +36,10 @@ export class SceneComponent implements OnInit, OnDestroy {
   @Input() height: number;
   @Input() aspectRatio: number;
   @Input() enabled: boolean = true;
+  @Input() clearColor: string;
+
+  @ContentChild(CameraComponent) camera: CameraComponent;
+  @ContentChildren(Base3DComponent) children: QueryList<any>;
 
   constructor(contentElement: ElementRef, logger: Logger) {
     this.contentElement = contentElement;
@@ -48,18 +55,17 @@ export class SceneComponent implements OnInit, OnDestroy {
     this.width = defaultTo(this.width, element.width || DefaultWidth);
     this.height = defaultTo(this.height, element.height || DefaultHeight);
     this.aspectRatio = defaultTo(this.aspectRatio, this.width / this.height);
-
-    // Init camera
-    this.camera = new PerspectiveCamera(75, this.aspectRatio, 0.1, 1000);
+    this.clearColor = defaultTo(this.clearColor, DefaultClearColor);
 
     // Add DOM element
-    element.appendChild(renderer.domElement);
+    renderer.setClearColor(this.clearColor);
+    const rendererElement = renderer.domElement;
+    rendererElement.style.display = 'block';
+    rendererElement.style.width = '100%';
+    rendererElement.style.height = '100%';
+    element.appendChild(rendererElement);
 
-    log.info(`Scene initialized with settings`, {
-      width: this.width,
-      height: this.height,
-      aspectRatio: this.aspectRatio
-    });
+    log.info(`Scene initialized with settings`, this);
 
     // Begin render loop
     this.start();
@@ -67,6 +73,17 @@ export class SceneComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stop();
+  }
+
+  ngAfterContentInit(): void {
+    // Init camera
+    if (!this.camera) {
+      throw new Error(`No camera specified in scene`);
+    }
+
+    // Subscribe to child changes
+    this.onChildrenChanged(this.children.toArray());
+    this.children.changes.subscribe(newChildren => this.onChildrenChanged(newChildren));
   }
 
   start(): void {
@@ -81,6 +98,14 @@ export class SceneComponent implements OnInit, OnDestroy {
     }
   }
 
+  onChildrenChanged(newChildren: any[]): void {
+    const log = this.log;
+    log.info('New children', newChildren);
+    for (let child of newChildren) {
+      this.scene.add(child.object);
+    }
+  }
+
   private renderLoop(): void {
     if (!this.running) {
       return;
@@ -91,6 +116,7 @@ export class SceneComponent implements OnInit, OnDestroy {
         this.render();
       } catch (err) {
         this.log.error(`Error during frame`, err);
+        throw err;
       }
     }
 
@@ -98,6 +124,10 @@ export class SceneComponent implements OnInit, OnDestroy {
   }
 
   private render(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.camera.target) {
+      console.log('Looking at', this.camera.target);
+      this.camera.object.lookAt(this.camera.target.object.position);
+    }
+    this.renderer.render(this.scene, this.camera.object as any);
   }
 }
